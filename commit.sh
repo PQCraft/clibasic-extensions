@@ -1,6 +1,6 @@
 #!/bin/bash
-./build-all.sh
+./build-all.sh || exit 1
 ./clean.sh
-git add *
+git add */ *.sh README.md
 git commit -S -m 'Update extensions'
 git push
