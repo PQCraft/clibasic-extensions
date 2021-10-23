@@ -1,11 +1,9 @@
 #!/bin/bash
-
 echob() {
     printf "\e[1m"
     echo "$@"
     printf "\e[0m"
 }
-
 OLDDIR="$(pwd)"
 [ -z "$1" ] && exit 1
 echob "Building $1..."
