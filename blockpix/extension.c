@@ -19,7 +19,7 @@ bool cbext_init(cb_extargs argv) {
     return true;
 }
 
-int cbext_runcmd(int argct, char** tmpargs, char** arg, uint8_t* argt, int32_t* argl) {
+int cbext_runcmd(int argct, char** arg, uint8_t* argt, int32_t* argl) {
     if (cb.chkCmd(1, P"QUIT")) {
         if (argct) return 3;
         bp_quit();
@@ -73,7 +73,7 @@ int cbext_runcmd(int argct, char** tmpargs, char** arg, uint8_t* argt, int32_t* 
     return 255;
 }
 
-cb_funcret cbext_runfunc(int argct, char** tmpargs, char** arg, uint8_t* argt, int32_t* argl, char* outbuf) {
+cb_funcret cbext_runfunc(int argct, char** arg, uint8_t* argt, int32_t* argl, char* outbuf) {
     if (cb.chkCmd(1, P"INIT")) {
         if (argct) return (cb_funcret){3, 0};
         outbuf[0] = '0' + bp_init();
