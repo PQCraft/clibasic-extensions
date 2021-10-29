@@ -166,13 +166,16 @@ cb_funcret cbext_runfunc(int argct, char** arg, uint8_t* argt, int32_t* argl, ch
     outbuf[0] = '0';
     outbuf[1] = 0;
     if (cb.chkCmd(6, "SH", "SH$", "EXEC", "EXECA", "EXEC$", "EXECA$")) {
-        return (cb_funcret){0, cb.getType(arg[0])};
+        if (arg[0][argl[0] - 1] == '$') outbuf[0] = 0;
+        return (cb_funcret){0, 2 - (arg[0][argl[0] - 1] == '$')};
     }
     if (cb.chkCmd(11, "FWRITE", "FLUSH", "MD", "MKDIR", "RM", "REMOVE", "MV", "MOVE", "REN", "RENAME", "_HOME$")) {
-        return (cb_funcret){0, cb.getType(arg[0])};
+        if (arg[0][argl[0] - 1] == '$') outbuf[0] = 0;
+        return (cb_funcret){0, 2 - (arg[0][argl[0] - 1] == '$')};
     }
     if (cb.chkCmd(3, "LOADEXT", "UNLOADEXT", "READEXTNAME$")) {
-        return (cb_funcret){0, cb.getType(arg[0])};
+        if (arg[0][argl[0] - 1] == '$') outbuf[0] = 0;
+        return (cb_funcret){0, 2 - (arg[0][argl[0] - 1] == '$')};
     }
     if (cb.chkCmd(2, "CD", "CHDIR")) {
         int ret = 0, retval = 0;
