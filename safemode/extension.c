@@ -6,6 +6,7 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include <dirent.h>
+#include <sys/wait.h>
 
 // Safe mode extension
 // Disables potentially dangerous commands and functions by overriding them
@@ -60,7 +61,7 @@ int slashct(char* dir) {
 }
 
 int cbext_runcmd(int argct, char** arg, uint8_t* argt, int32_t* argl) {
-    if (cb.chkCmd(4, "$", "SH", "EXEC", "EXECA")) {
+    if (cb.chkCmd(6, "$", "SH", "EXEC", "EXECA", "CALL", "CALLA")) {
         return 0;
     }
     if (cb.chkCmd(10, "FWRITE", "FLUSH", "MD", "MKDIR", "RM", "REMOVE", "MV", "MOVE", "REN", "RENAME")) {
@@ -159,6 +160,79 @@ int cbext_runcmd(int argct, char** arg, uint8_t* argt, int32_t* argl) {
         (void)ret;
         return 0;
     }
+    if (cb.chkCmd(2, "RUN", "RUNA")) {
+        if (argct < 1) return 3;
+        bool execa = false;
+        char** tmparg = NULL;
+        int tmpargct = 0;
+        if (!strcmp(arg[0], "RUNA")) {
+            if (argct != 1) return 3;
+            execa = true;
+            int v = -1;
+            for (register int i = 0; i < *cb.varmaxct; ++i) {
+                if (cb.vardata[i].inuse && !strcmp(arg[1], cb.vardata[i].name)) {v = i; break;}
+            }
+            if (v == -1 || cb.vardata[v].size == -1) {cb.seterrstr(arg[1]); return 23;}
+            if (cb.vardata[v].type != 1) return 2;
+            tmparg = arg;
+            tmpargct = argct;
+            arg = cb.vardata[v].data - 1;
+            argct = cb.vardata[v].size + 1;
+        } else {
+            if (!cb.solvearg(1)) return *cb.cerr;
+            if (argt[1] != 1) return 2;
+        }
+        #ifndef _WIN32
+        char** runargs = (char**)malloc((argct + 3) * sizeof(char*));
+        runargs[0] = cb.startcmd;
+        runargs[1] = cb.roptstr;
+        runargs[2] = arg[1];
+        argct += 2;
+        int argno = 3;
+        for (; argno < argct; argno++) {
+            if (!execa) if (!cb.solvearg(argno - 1)) {free(runargs); return *cb.cerr;}
+            runargs[argno] = arg[argno - 1];
+        }
+        argct -= 2;
+        runargs[argno] = NULL;
+        pid_t pid = fork();
+        if (pid < 0) return -1;
+        else if (pid == 0) {
+            execvp(cb.startcmd, runargs);
+            exit(0);
+        }
+        else if (pid > 0) {
+            while (wait(cb.retval) != pid) {}
+            *cb.retval = WEXITSTATUS(*cb.retval);
+        }
+        free(runargs);
+        #else
+        char* tmpcmd = malloc(CB_BUF_SIZE);
+        tmpcmd[0] = 0;
+        bool nq;
+        if ((nq = winArgNeedsQuotes(startcmd))) copyStrApnd(" \"", tmpcmd);
+        copyStrApnd(cb.startcmd, tmpcmd);
+        if (nq) strApndChar(tmpcmd, '"');
+        copyStrApnd(" -x", tmpcmd);
+        for (int argno = 1; argno <= argct; ++argno) {
+            if (!execa) if (argno > 1) if (!cb.solvearg(argno)) {free(tmpcmd); return *cb.cerr;}
+            strApndChar(tmpcmd, ' ');
+            bool nq = winArgNeedsQuotes(arg[argno]);
+            if (nq) strApndChar(tmpcmd, '"');
+            copyStrApnd(arg[argno], tmpcmd);
+            if (nq) strApndChar(tmpcmd, '"');
+        }
+        int ret = system(tmpcmd);
+        (void)ret;
+        free(tmpcmd);
+        #endif
+        if (execa) {
+            argct = tmpargct;
+            arg = tmparg;
+        }
+        cb.updateTxtAttrib();
+        return 0;
+    }
     return 255;
 }
 
@@ -179,9 +253,9 @@ cb_funcret cbext_runfunc(int argct, char** arg, uint8_t* argt, int32_t* argl, ch
     }
     if (cb.chkCmd(2, "CD", "CHDIR")) {
         int ret = 0, retval = 0;
-        if (argct != 1) {return (cb_funcret){3, 0};}
-        if (argt[1] != 1) {return (cb_funcret){2, 0};}
-        if (argl[1] < 1) {return (cb_funcret){16, 0};}
+        if (argct != 1) {return (cb_funcret){3, 1};}
+        if (argt[1] != 1) {return (cb_funcret){2, 1};}
+        if (argl[1] < 1) {return (cb_funcret){16, 1};}
         #ifndef _WIN32
         char* newcwd = realpath(arg[1], NULL);
         #else
@@ -222,12 +296,12 @@ cb_funcret cbext_runfunc(int argct, char** arg, uint8_t* argt, int32_t* argl, ch
     if (cb.chkCmd(1, "FILES$")) {
         *cb.fileerror = 0;
         errno = 0;
-        if (argct > 1) return (cb_funcret){3, 0};
+        if (argct > 1) return (cb_funcret){3, 1};
         char* olddn = NULL;
         char* bret;
         int ret;
         if (argct) {
-            if (argt[1] != 1) return (cb_funcret){2, 0};
+            if (argt[1] != 1) return (cb_funcret){2, 1};
             olddn = malloc(256);
             bret = getcwd(olddn, 256);
             #ifndef _WIN32
@@ -281,6 +355,28 @@ cb_funcret cbext_runfunc(int argct, char** arg, uint8_t* argt, int32_t* argl, ch
         closedir(cwd);
         (void)ret;
         return (cb_funcret){0, 1};
+    }
+    if (cb.chkCmd(1, "ISFILE")) {
+        *cb.fileerror = 0;
+        if (argct != 1) {return (cb_funcret){3, 2};}
+        if (argt[1] != 1) {return (cb_funcret){2, 2};}
+        if (!arg[1][0]) {*cb.fileerror = EINVAL; return (cb_funcret){16, 2};}
+        #ifndef _WIN32
+        char* newcwd = realpath(arg[1], NULL);
+        #else
+        char* newcwd = _fullpath(NULL, arg[1], CB_BUF_SIZE);
+        #endif
+        struct stat pathstat;
+        if (!newcwd || slashct(newcwd) < slashct(startcwd) || stat(arg[1], &pathstat)) {
+            outbuf[0] = '-';
+            outbuf[1] = '1';
+            outbuf[2] = 0;
+            *cb.fileerror = errno;
+            return (cb_funcret){0, 2};
+        }
+        outbuf[0] = '0' + !(S_ISDIR(pathstat.st_mode));
+        outbuf[1] = 0;
+        return (cb_funcret){0, 2};
     }
     return (cb_funcret){127, 0};
 }
