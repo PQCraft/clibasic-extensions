@@ -188,7 +188,7 @@ int cbext_runcmd(int argct, char** arg, uint8_t* argt, int32_t* argl) {
         #else
         char* newcwd = _fullpath(NULL, arg[1], CB_BUF_SIZE);
         #endif
-        if (!newcwd || slashct(newcwd) < slashct(startcwd)) {
+        if (!newcwd || slashct(newcwd) < slashct(startcwd) + 1) {
             if (execa) {
                 argct = tmpargct;
                 arg = tmparg;
