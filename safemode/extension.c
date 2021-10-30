@@ -183,6 +183,18 @@ int cbext_runcmd(int argct, char** arg, uint8_t* argt, int32_t* argl) {
             if (argt[1] != 1) return 2;
         }
         #ifndef _WIN32
+        #ifndef _WIN32
+        char* newcwd = realpath(arg[1], NULL);
+        #else
+        char* newcwd = _fullpath(NULL, arg[1], CB_BUF_SIZE);
+        #endif
+        if (!newcwd || slashct(newcwd) < slashct(startcwd)) {
+            if (execa) {
+                argct = tmpargct;
+                arg = tmparg;
+            }
+            return 16;
+        }
         char** runargs = (char**)malloc((argct + 3) * sizeof(char*));
         runargs[0] = cb.startcmd;
         runargs[1] = cb.roptstr;
@@ -200,8 +212,7 @@ int cbext_runcmd(int argct, char** arg, uint8_t* argt, int32_t* argl) {
         else if (pid == 0) {
             execvp(cb.startcmd, runargs);
             exit(0);
-        }
-        else if (pid > 0) {
+        } else if (pid > 0) {
             while (wait(cb.retval) != pid) {}
             *cb.retval = WEXITSTATUS(*cb.retval);
         }
