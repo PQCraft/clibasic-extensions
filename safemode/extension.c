@@ -378,7 +378,7 @@ cb_funcret cbext_runfunc(int argct, char** arg, uint8_t* argt, int32_t* argl, ch
         char* newcwd = _fullpath(NULL, arg[1], CB_BUF_SIZE);
         #endif
         struct stat pathstat;
-        if (!newcwd || slashct(newcwd) < slashct(startcwd) || stat(arg[1], &pathstat)) {
+        if (!newcwd || slashct(newcwd) < slashct(startcwd) + 1 || stat(arg[1], &pathstat)) {
             outbuf[0] = '-';
             outbuf[1] = '1';
             outbuf[2] = 0;
