@@ -32,13 +32,17 @@ int cbext_runcmd(int argct, char** arg, uint8_t* argt, int32_t* argl) {
     }
     if (cb.chkCmd(1, P"SET")) {
         if (argct != 3) return 3;
-        if (!cb.solvearg(1) || !cb.solvearg(2) || !cb.solvearg(3)) return *cb.cerr;
+        if (!cb.solvearg(arg, argt, argl, 1)
+            || !cb.solvearg(arg, argt, argl, 2)
+            || !cb.solvearg(arg, argt, argl, 3)) return *cb.cerr;
         bp_set(atoi(arg[1]), atoi(arg[2]), atoi(arg[3]));
         return 0;
     }
     if (cb.chkCmd(1, P"IMMEDIATE_SET")) {
         if (argct != 3) return 3;
-        if (!cb.solvearg(1) || !cb.solvearg(2) || !cb.solvearg(3)) return *cb.cerr;
+        if (!cb.solvearg(arg, argt, argl, 1)
+            || !cb.solvearg(arg, argt, argl, 2)
+            || !cb.solvearg(arg, argt, argl, 3)) return *cb.cerr;
         if (argt[1] != 2 || argt[2] != 2 || argt[3] != 2) return 2;
         bp_immediate_set(atoi(arg[1]), atoi(arg[2]), atoi(arg[3]));
         return 0;
@@ -65,7 +69,7 @@ int cbext_runcmd(int argct, char** arg, uint8_t* argt, int32_t* argl) {
     }
     if (cb.chkCmd(1, P"FILL")) {
         if (argct != 1) return 3;
-        if (!cb.solvearg(1)) return *cb.cerr;
+        if (!cb.solvearg(arg, argt, argl, 1)) return *cb.cerr;
         if (argt[1] != 2) return 2;
         bp_fill(atoi(arg[1]));
         return 0;

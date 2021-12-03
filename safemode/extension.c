@@ -79,7 +79,7 @@ int cbext_runcmd(int argct, char** arg, uint8_t* argt, int32_t* argl) {
     if (cb.chkCmd(2, "CHDIR", "CD")) {
         int ret = 0, retval = 0;
         if (argct != 1) return 3;
-        if (!cb.solvearg(1)) return *cb.cerr;
+        if (!cb.solvearg(arg, argt, argl, 1)) return *cb.cerr;
         if (argt[1] != 1) return 2;
         if (argl[1] < 1) return 16;
         #ifndef _WIN32
@@ -101,7 +101,7 @@ int cbext_runcmd(int argct, char** arg, uint8_t* argt, int32_t* argl) {
         if (argct > 1) return 3;
         char* olddn = NULL;
         if (argct) {
-            if (!cb.solvearg(1)) return *cb.cerr;
+            if (!cb.solvearg(arg, argt, argl, 1)) return *cb.cerr;
             if (argt[1] != 1) return 2;
             int tmpret = isFile(arg[1]);
             if (tmpret) {
@@ -179,7 +179,7 @@ int cbext_runcmd(int argct, char** arg, uint8_t* argt, int32_t* argl) {
             arg = cb.vardata[v].data - 1;
             argct = cb.vardata[v].size + 1;
         } else {
-            if (!cb.solvearg(1)) return *cb.cerr;
+            if (!cb.solvearg(arg, argt, argl, 1)) return *cb.cerr;
             if (argt[1] != 1) return 2;
         }
         #ifndef _WIN32
@@ -202,7 +202,7 @@ int cbext_runcmd(int argct, char** arg, uint8_t* argt, int32_t* argl) {
         argct += 2;
         int argno = 3;
         for (; argno < argct; argno++) {
-            if (!execa) if (!cb.solvearg(argno - 1)) {free(runargs); return *cb.cerr;}
+            if (!execa) if (!cb.solvearg(arg, argt, argl, argno - 1)) {free(runargs); return *cb.cerr;}
             runargs[argno] = arg[argno - 1];
         }
         argct -= 2;
@@ -226,7 +226,7 @@ int cbext_runcmd(int argct, char** arg, uint8_t* argt, int32_t* argl) {
         if (nq) strApndChar(tmpcmd, '"');
         copyStrApnd(" -x", tmpcmd);
         for (int argno = 1; argno <= argct; ++argno) {
-            if (!execa) if (argno > 1) if (!cb.solvearg(argno)) {free(tmpcmd); return *cb.cerr;}
+            if (!execa) if (argno > 1) if (!cb.solvearg(arg, argt, argl, argno)) {free(tmpcmd); return *cb.cerr;}
             strApndChar(tmpcmd, ' ');
             bool nq = winArgNeedsQuotes(arg[argno]);
             if (nq) strApndChar(tmpcmd, '"');
